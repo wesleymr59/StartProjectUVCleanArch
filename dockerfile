@@ -1,13 +1,14 @@
-FROM python:3.12-slim-bookworm
+FROM python:3.12-slim
 
-# The installer requires curl (and certificates) to download the release archive
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
+# Install uv.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Download the latest installer
-ADD https://astral.sh/uv/install.sh /uv-installer.sh
+# Copy the application into the container.
+COPY . /app
 
-# Run the installer then remove it
-RUN sh /uv-installer.sh && rm /uv-installer.sh
+# Install the application dependencies.
+WORKDIR /app
+RUN uv sync --frozen --no-cache
 
-# Ensure the installed binary is on the `PATH`
-ENV PATH="/root/.cargo/bin/:$PATH"
+# Run the application.
+CMD ["/app/.venv/bin/fastapi", "run", "app/main.py", "--port", "80", "--host", "0.0.0.0"]
